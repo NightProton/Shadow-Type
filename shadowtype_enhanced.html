@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Shadow Type</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-deep: #0a000f;
+      --bg-mid: #130020;
+      --purple-core: #7c00ff;
+      --purple-glow: #aa44ff;
+      --pink-accent: #ff2dff;
+      --text-main: #f0deff;
+      --text-dim: #9966cc;
+      --border-col: rgba(180, 80, 255, 0.35);
+      --card-bg: rgba(30, 0, 55, 0.85);
+      --correct: #39ff9a;
+      --wrong: #ff4466;
+      --radius: 14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Space Mono', 'Courier New', monospace;
+      background: var(--bg-deep);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated bg grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,0,255,0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,0,255,0.07) 1px, transparent 1px);
+      background-size: 48px 48px;
+      animation: gridDrift 20s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ambient orbs */
+    body::after {
+      content: '';
+      position: fixed;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124,0,255,0.15) 0%, transparent 70%);
+      top: -150px; left: -150px;
+      animation: orbDrift 12s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .orb2 {
+      position: fixed;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,45,255,0.10) 0%, transparent 70%);
+      bottom: -120px; right: -120px;
+      animation: orbDrift2 15s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes gridDrift {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(48px); }
+    }
+    @keyframes orbDrift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(60px, 40px) scale(1.1); }
+    }
+    @keyframes orbDrift2 {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(-50px,-30px) scale(1.15); }
+    }
+
+    /* ── SPLASH SCREEN ─────────────────────────── */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      gap: 2rem;
+    }
+
+    .splash-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(3rem, 10vw, 6rem);
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #ffffff 0%, #cc88ff 40%, #ff2dff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: titlePulse 3s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% { filter: drop-shadow(0 0 24px rgba(255,45,255,0.6)); }
+      50%       { filter: drop-shadow(0 0 48px rgba(124,0,255,0.9)); }
+    }
+
+    .splash-sub {
+      font-size: 0.9rem;
+      letter-spacing: 0.25em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      animation: fadeInUp 1s ease 0.3s both;
+    }
+
+    .splash-prompt {
+      font-size: 1rem;
+      color: var(--text-main);
+      letter-spacing: 0.1em;
+      padding: 0.7rem 2rem;
+      border: 1px solid var(--border-col);
+      border-radius: 999px;
+      background: rgba(124,0,255,0.1);
+      animation: promptBreathe 2s ease-in-out infinite;
+      cursor: pointer;
+    }
+
+    @keyframes promptBreathe {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,45,255,0.3), inset 0 0 0 0 rgba(255,45,255,0.05); border-color: var(--border-col); }
+      50%       { box-shadow: 0 0 20px 4px rgba(255,45,255,0.25), inset 0 0 12px rgba(124,0,255,0.1); border-color: rgba(255,45,255,0.5); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── MAIN GAME LAYOUT ──────────────────────── */
+    #game-wrapper {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 560px;
+      padding: 1rem;
+    }
+
+    .game-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 2.2rem;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ffffff 0%, #cc88ff 50%, #ff2dff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── HUD BAR ───────────────────────────────── */
+    #hud {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .hud-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-col);
+      border-radius: var(--radius);
+      padding: 0.55rem 1.2rem;
+      min-width: 100px;
+      backdrop-filter: blur(8px);
+    }
+
+    .hud-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .hud-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+      font-family: 'Space Mono', monospace;
+      transition: color 0.25s;
+    }
+
+    #hud-score .hud-value { color: var(--purple-glow); }
+
+    /* Timer bar */
+    .timer-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .timer-track {
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    #timer-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--purple-core), var(--pink-accent));
+      border-radius: 999px;
+      transition: width 1s linear, background 2s ease;
+    }
+
+    .timer-text {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-align: center;
+    }
+
+    /* ── CARD ──────────────────────────────────── */
+    #game-card {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border-col);
+      border-radius: 20px;
+      padding: 2rem 2rem 1.8rem;
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Corner accent lines */
+    #game-card::before, #game-card::after {
+      content: '';
+      position: absolute;
+      width: 50px; height: 50px;
+      border-color: var(--pink-accent);
+      border-style: solid;
+      opacity: 0.4;
+    }
+    #game-card::before { top: 0; left: 0; border-width: 2px 0 0 2px; border-radius: 20px 0 0 0; }
+    #game-card::after  { bottom: 0; right: 0; border-width: 0 2px 2px 0; border-radius: 0 0 20px 0; }
+
+    .card-hint {
+      font-size: 0.65rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      align-self: flex-start;
+    }
+
+    /* ── WORD DISPLAY ──────────────────────────── */
+    #word-display {
+      font-size: clamp(2rem, 8vw, 3rem);
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #ffffff;
+      background: rgba(124, 0, 255, 0.15);
+      border: 1px solid rgba(170, 68, 255, 0.4);
+      border-radius: 12px;
+      padding: 0.6rem 1.8rem;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #word-display::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: -100%;
+      width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--pink-accent), transparent);
+      animation: scanLine 3s linear infinite;
+    }
+
+    @keyframes scanLine {
+      from { left: -100%; }
+      to   { left: 200%; }
+    }
+
+    /* ── INPUT ─────────────────────────────────── */
+    #input-wrap {
+      width: 100%;
+      position: relative;
+    }
+
+    #input-field {
+      font-size: 1.3rem;
+      font-family: 'Space Mono', monospace;
+      padding: 0.8rem 1.2rem;
+      border: 1px solid var(--border-col);
+      border-radius: 10px;
+      text-align: center;
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      caret-color: var(--pink-accent);
+    }
+
+    #input-field::placeholder { color: var(--text-dim); font-size: 0.9rem; letter-spacing: 0.05em; }
+
+    #input-field:focus {
+      border-color: rgba(255,45,255,0.6);
+      box-shadow: 0 0 0 3px rgba(255,45,255,0.12), 0 0 20px rgba(124,0,255,0.15);
+    }
+
+    /* ── FEEDBACK ──────────────────────────────── */
+    #feedback {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      min-height: 1.6rem;
+      transition: opacity 0.2s;
+    }
+
+    #feedback.correct { color: var(--correct); }
+    #feedback.wrong   { color: var(--wrong); }
+
+    /* ── WORD CHARS (animated reveal) ─────────── */
+    .word-char {
+      display: inline-block;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+
+    /* ── DISTRACTION POPUPS ─────────────────────── */
+    .distraction-popup {
+      position: fixed;
+      background: rgba(255, 0, 255, 0.82);
+      color: #fff;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      padding: 10px 18px;
+      border-radius: 12px;
+      z-index: 9999;
+      border: 2px solid rgba(255,255,0,0.6);
+      letter-spacing: 0.05em;
+      animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both, popBlink 0.4s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.5) rotate(-6deg); opacity: 0; }
+      to   { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    @keyframes popBlink {
+      from { opacity: 0.85; }
+      to   { opacity: 0.6; }
+    }
+
+    /* ── GAME OVER SCREEN ───────────────────────── */
+    #gameover-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10001;
+      gap: 1.5rem;
+      animation: fadeIn 0.6s ease both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .go-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .go-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #fff 0%, var(--purple-glow) 50%, var(--pink-accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .go-score {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(3rem, 12vw, 6rem);
+      font-weight: 700;
+      color: var(--correct);
+      text-shadow: 0 0 30px rgba(57,255,154,0.5);
+      animation: scorePop 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    @keyframes scorePop {
+      from { transform: scale(0.3); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    .go-note {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+    }
+
+    audio { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="orb2"></div>
+
+<!-- SPLASH -->
+<div id="splash-screen">
+  <div class="splash-title">Shadow Type</div>
+  <div class="splash-sub">Reverse. Type. Survive.</div>
+  <div class="splash-prompt">Click anywhere to begin</div>
+</div>
+
+<!-- GAME -->
+<div id="game-wrapper">
+  <div class="game-title">Shadow Type</div>
+
+  <div id="hud">
+    <div class="hud-chip" id="hud-score">
+      <span class="hud-label">Score</span>
+      <span class="hud-value" id="score-val">0</span>
+    </div>
+    <div class="timer-wrap">
+      <div class="timer-track"><div id="timer-bar"></div></div>
+      <div class="timer-text" id="timer-text">5:00</div>
+    </div>
+    <div class="hud-chip">
+      <span class="hud-label">Level</span>
+      <span class="hud-value" id="level-val">—</span>
+    </div>
+  </div>
+
+  <div id="game-card">
+    <div class="card-hint">↩ Type the word reversed</div>
+    <div id="word-display">—</div>
+    <div id="input-wrap">
+      <input id="input-field" placeholder="type reversed word here" type="text" autocomplete="off" autocorrect="off" spellcheck="false"/>
+    </div>
+    <div id="feedback"></div>
+  </div>
+</div>
+
+<!-- AUDIO -->
+<audio id="meme-sound" muted preload="auto" src="https://www.myinstants.com/media/sounds/vine-boom.mp3"></audio>
+<audio id="meme2" muted preload="auto" src="https://www.myinstants.com/media/sounds/chicken-jockey.mp3"></audio>
+<audio id="meme3" muted preload="auto" src="https://www.myinstants.com/media/sounds/tuco-get-out.mp3"></audio>
+<audio id="meme4" muted preload="auto" src="https://www.myinstants.com/media/sounds/fbi-open-up.mp3"></audio>
+<audio id="meme5" muted preload="auto" src="https://www.myinstants.com/media/sounds/a-few-moments-later-sponge-bob-sfx-fun.mp3"></audio>
+<audio id="meme6" muted preload="auto" src="https://www.myinstants.com/media/sounds/mario-jump.mp3"></audio>
+<audio id="meme7" muted preload="auto" src="https://www.myinstants.com/media/sounds/oiia-oiia.mp3"></audio>
+<audio id="meme8" muted preload="auto" src="https://www.myinstants.com/media/sounds/super-mario-death.mp3"></audio>
+
+<script>
+async function requestFullscreen() {
+  if (document.documentElement.requestFullscreen) {
+    await document.documentElement.requestFullscreen();
+  }
+}
+</script>
+
+<script>
+  // ── Word lists (unchanged) ──────────────────────────────────────────
+  const wordBuckets = {
+    2: ["am","if","on","up"],
+    3: ["sun","ice","dog","man","run","fan","top","cat","big","ant","bat","car"],
+    4: ["game","fork","blue","tone"],
+    5: ["plant","drink","smile","quick"],
+    6: ["pickle","jumper","tricky","banana","socket","garden","sudden","gather","butter","circle","bottle","random","planet","formal","spirit"],
+    7: ["journal","forever","decoder","passion","fortune","cabinet","teacher","gallery","monster","diamond","problem","fashion"],
+    8: ["midnight","absolute","validate","tracking","elevator","hospital","solution","champion","favorite","activity","vacation","distance"],
+    9: ["fantastic","blueprint","undercoat","monologue","nightmare","objective","landscape","fortunate","adventure","different","fantasize","gentleman"],
+    10: ["horrendous","explanation","harmonizing","compression","playgrounds","astonishing","backgrounds","satisfaction","breathtaking","conscription","infiltration","qualification"],
+    11: ["calculations","applications","revolutions","declarations","supervisions","conversations","limitations","evaluations","associations"],
+    12: ["transmission","conversation","presentation","modification","determination","consideration","organization","communication","implementation"],
+    13: ["enlightenment","administration","accomplishing","understanding","recommendation","representation","identification","qualification","differentiation"],
+    14: ["unquestionably","identification","indistinguishable","contemporaneous","oversimplification","reconceptualization"],
+    15: ["counterproductive","incompatibility","oversimplification","uncharacteristically","internationalization","disproportionately"]
+  };
+
+  // ── Game state (unchanged logic) ───────────────────────────────────
+  let score = 0, level = 0, timeLeft = 300, currentWord = "", startTime = 0;
+  let wordStats = [], timer, distractions, memeLoop, flickerLoop;
+  let keystrokeCounter = 0, glitchNext = false;
+
+  const input        = document.getElementById("input-field");
+  const wordDisplay  = document.getElementById("word-display");
+  const scoreDisplay = document.getElementById("score-val");
+  const levelDisplay = document.getElementById("level-val");
+  const timerText    = document.getElementById("timer-text");
+  const timerBar     = document.getElementById("timer-bar");
+  const feedback     = document.getElementById("feedback");
+
+  // Inject new audios
+  const newAudios = [
+    "https://www.myinstants.com/media/sounds/metal-gear-solid-alert.mp3",
+    "https://www.myinstants.com/media/sounds/lego-breaking.mp3",
+    "https://www.myinstants.com/media/sounds/no-no-wait-wait.mp3",
+    "https://www.myinstants.com/media/sounds/r2d2-scream.mp3",
+    "https://www.myinstants.com/media/sounds/duolingo-correct.mp3"
+  ];
+  newAudios.forEach((src, idx) => {
+    const a = document.createElement("audio");
+    a.id = `new-meme${idx}`; a.muted = true; a.preload = "auto"; a.src = src;
+    document.body.appendChild(a);
+  });
+
+  const allMemeIds = [
+    "meme-sound","meme2","meme3","meme4","meme5","meme6","meme7","meme8",
+    "new-meme0","new-meme1","new-meme2","new-meme3","new-meme4"
+  ];
+
+  function randomLetter() {
+    return "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)];
+  }
+
+  function pickWord() {
+    const levels = Object.keys(wordBuckets).map(Number).sort((a,b)=>a-b);
+    const curLvl = levels.find(len => score < len*2) || 15;
+    levelDisplay.textContent = curLvl;
+    const list = wordBuckets[curLvl] || wordBuckets[15];
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function xorEncrypt(str, key) {
+    let out = "";
+    for (let i=0; i<str.length; i++)
+      out += String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+    return out;
+  }
+
+  function downloadEncryptedStats() {
+    const raw = wordStats.map(s =>
+      `Word:${s.word}, Resp:${s.response}, Corr:${s.correct}, Time:${s.time.toFixed(2)}s`
+    ).join("\n") + `\n\nFinal Score:${score}`;
+    const enc = xorEncrypt(raw, "3004");
+    const blob = new Blob([enc], { type:"text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "stats.txt"; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Animated word reveal
+  function setWordDisplay(word) {
+    wordDisplay.innerHTML = "";
+    word.split("").forEach((ch, i) => {
+      const span = document.createElement("span");
+      span.className = "word-char";
+      span.textContent = ch;
+      span.style.animationDelay = `${i * 40}ms`;
+      span.style.opacity = "0";
+      span.style.transform = "translateY(-8px)";
+      wordDisplay.appendChild(span);
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          span.style.transition = "opacity 0.2s ease, transform 0.2s ease";
+          span.style.opacity = "1";
+          span.style.transform = "translateY(0)";
+        }, i * 40);
+      });
+    });
+  }
+
+  function nextRound() {
+    currentWord = pickWord();
+    setWordDisplay(currentWord);
+    input.value = "";
+    feedback.textContent = "";
+    feedback.className = "";
+    startTime = performance.now();
+  }
+
+  // Timer display formatting
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${String(sec).padStart(2,'0')}`;
+  }
+
+  // ── Input handler (unchanged logic) ───────────────────────────────
+  input.addEventListener("keydown", e => {
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+      keystrokeCounter++;
+      if (glitchNext) {
+        e.preventDefault();
+        input.value += randomLetter();
+        glitchNext = false;
+        return;
+      }
+      if (keystrokeCounter >= Math.floor(Math.random()*3)+3) {
+        glitchNext = true;
+        keystrokeCounter = 0;
+      }
+    }
+    if (e.key === "Enter") {
+      const t = (performance.now() - startTime) / 1000;
+      const rev = currentWord.split("").reverse().join("");
+      const ok = input.value.toLowerCase() === rev.toLowerCase();
+      score += ok ? 1 : -1;
+
+      // Visual feedback
+      feedback.textContent = ok ? "✓ Correct!" : "✗ Wrong!";
+      feedback.className = ok ? "correct" : "wrong";
+      scoreDisplay.textContent = score;
+
+      // Score pop animation
+      scoreDisplay.style.transform = "scale(1.4)";
+      scoreDisplay.style.transition = "transform 0.15s cubic-bezier(0.34,1.56,0.64,1)";
+      setTimeout(() => { scoreDisplay.style.transform = "scale(1)"; }, 200);
+
+      wordStats.push({ word: currentWord, response: input.value, correct: ok, time: t });
+      nextRound();
+    }
+  });
+
+  // ── Timer (unchanged logic, enhanced display) ──────────────────────
+  function tickTimer() {
+    timeLeft--;
+    timerText.textContent = formatTime(timeLeft);
+    const pct = (timeLeft / 300) * 100;
+    timerBar.style.width = pct + "%";
+
+    // Colour urgency
+    if (pct < 20) {
+      timerBar.style.background = "linear-gradient(90deg, #ff2222, #ff6600)";
+      timerText.style.color = "#ff4444";
+    } else if (pct < 40) {
+      timerBar.style.background = "linear-gradient(90deg, #ff6600, #ffaa00)";
+    }
+
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      clearInterval(distractions);
+      clearInterval(memeLoop);
+      clearInterval(flickerLoop);
+      input.disabled = true;
+      showGameOver();
+    }
+  }
+
+  function showGameOver() {
+    const screen = document.createElement("div");
+    screen.id = "gameover-screen";
+    screen.innerHTML = `
+      <div class="go-label">Session Complete</div>
+      <div class="go-title">Game Over</div>
+      <div class="go-score">${score}</div>
+      <div class="go-label">Final Score</div>
+      <div class="go-note">Stats saved to stats.txt</div>
+    `;
+    document.body.appendChild(screen);
+    downloadEncryptedStats();
+  }
+
+  // ── Distractions (same text, improved style) ───────────────────────
+  function showDistractionPopup() {
+    const texts = ["tralelo tralala","Bombardiro Crocodilo","Tung Tung Sahur","Lirilì Larilà","Brr Brr Patapim","Chimpanzini Bananini"];
+    const txt = texts[Math.floor(Math.random()*texts.length)];
+    const pop = document.createElement("div");
+    pop.className = "distraction-popup";
+    pop.innerText = txt;
+    pop.style.left = Math.random()*(window.innerWidth-180)+"px";
+    pop.style.top  = Math.random()*(window.innerHeight-60)+"px";
+    document.body.appendChild(pop);
+    setTimeout(() => pop.remove(), 6000);
+  }
+
+  // ── Meme sounds (unchanged) ────────────────────────────────────────
+  function loopMemes() {
+    return setInterval(() => {
+      const id = allMemeIds[Math.floor(Math.random()*allMemeIds.length)];
+      const s = document.getElementById(id);
+      if (s) { s.pause(); s.currentTime = 0; s.play().catch(()=>{}); }
+    }, Math.random()*5000+4000);
+  }
+
+  // ── Background flicker (unchanged) ────────────────────────────────
+  function startBackgroundFlicker() {
+    return setInterval(() => {
+      document.body.style.transition = "background 0.2s ease";
+      document.body.style.background = `radial-gradient(circle,#${Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0')},#000)`;
+      setTimeout(() => document.body.style.background = "", 500);
+    }, Math.random()*3000+4000);
+  }
+
+  function unmuteAllAudio() {
+    document.querySelectorAll("audio").forEach(a => a.muted = false);
+  }
+
+  // ── Start game (unchanged) ─────────────────────────────────────────
+  function startGame() {
+    requestFullscreen();
+    const splash = document.getElementById("splash-screen");
+    if (splash) splash.remove();
+    unmuteAllAudio();
+    timerText.textContent = formatTime(timeLeft);
+    timer       = setInterval(tickTimer, 1000);
+    distractions = setInterval(showDistractionPopup, Math.random()*2000+3000);
+    memeLoop    = loopMemes();
+    flickerLoop = startBackgroundFlicker();
+    nextRound();
+    input.focus();
+    document.removeEventListener("keydown", startGameOnKey);
+    document.removeEventListener("click", startGameOnClick);
+  }
+
+  function startGameOnKey() { startGame(); }
+  function startGameOnClick() { startGame(); }
+
+  document.addEventListener("keydown", startGameOnKey);
+  document.addEventListener("click",   startGameOnClick);
+</script>
+</body>
+</html>
